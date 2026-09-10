@@ -77,3 +77,43 @@ jobs:
         run: |
           docker push "${{ steps.release.outputs.image }}:${{ steps.release.outputs.version }}"
           docker push "${{ steps.release.outputs.image }}:latest"
+
+  deploy-staging:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+
+    steps:
+      - name: Deploy versioned image to staging
+        uses: appleboy/ssh-action@v1
+        env:
+          IMAGE: ${{ needs.build.outputs.image }}
+          VERSION: ${{ needs.build.outputs.version }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          envs: IMAGE,VERSION,GHCR_USER,GHCR_TOKEN
+          script: |
+            set -eu
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            docker pull "$IMAGE:$VERSION"
+            docker logout ghcr.io
+            docker stop mlops-api || true
+            docker rm mlops-api || true
+            docker run -d \
+              --name mlops-api \
+              --restart unless-stopped \
+              -p 5000:5000 \
+              "$IMAGE:$VERSION"
+
+      - name: Verify staging deployment
+        env:
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+        run: |
+          curl --fail --show-error \
+            --retry 10 --retry-delay 3 --retry-all-errors \
+            "http://${STAGING_HOST}:5000/health"
