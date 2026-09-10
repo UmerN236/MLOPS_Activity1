@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+deploy_key
+deploy_key.pub
+staging_deploy_key
+staging_deploy_key.pub
+production_deploy_key
+production_deploy_key.pub
+.DS_Store
