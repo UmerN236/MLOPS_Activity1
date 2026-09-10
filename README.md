@@ -42,14 +42,14 @@ curl -X POST http://localhost:5000/predict \
 
 ```bash
 docker build -t mlops-cd-demo:local .
-docker run --rm -p 5000:5000 mlops-cd-demo:local
+docker run --rm -p 5052:5000 mlops-cd-demo:local
 ```
 
 Alternatively:
 
 ```bash
 docker compose up -d --build
-curl --fail http://localhost:5000/health
+curl --fail http://localhost:5052/health
 docker compose down
 ```
 
